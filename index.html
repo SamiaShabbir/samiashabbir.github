@@ -2451,67 +2451,81 @@ skillsTimeline.from(skillCards, {
 
 // Animated Skill Circle Progress
 skillCards.forEach(card => {
-    const percent = parseInt(card.dataset.percent);
-    const circle = card.querySelector('.circle-progress');
-    const circumference = 339.292; // 2 * PI * radius (54)
-    const offset = circumference - (percent / 100) * circumference;
+  const percent = parseInt(card.dataset.percent, 10);
+  const circle = card.querySelector('.circle-progress');
+  const circumference = 339.292; // 2 * PI * radius (54)
+  const offset = circumference - (percent / 100) * circumference;
 
-    ScrollTrigger.create({
-        trigger: card,
-        start: 'top 75%',
-        onEnter: () => {
-            gsap.to(circle, {
-                strokeDashoffset: offset,
-                duration: 2,
-                ease: 'power3.out'
-            });
+  const textElement = card.querySelector('.circle-text');
 
-            // Animate number counting
-            const textElement = card.querySelector('.circle-text');
-            gsap.from(textElement, {
-                textContent: 0,
-                duration: 2,
-                ease: 'power2.out',
-                snap: { textContent: 1 },
-                onUpdate: function() {
-                    textElement.textContent = Math.ceil(this.targets()[0].textContent) + '%';
-                }
-            });
-        }
+  // helper: run animation (works both enter + enter back)
+  function runSkillAnim() {
+    // reset + kill old tweens to avoid NaN / stacking
+    gsap.killTweensOf(circle);
+    gsap.killTweensOf(textElement);
+
+    // Always start from 0% on every trigger
+    textElement.textContent = "0%";
+    gsap.set(circle, { strokeDashoffset: circumference });
+
+    // animate circle
+    gsap.to(circle, {
+      strokeDashoffset: offset,
+      duration: 1.6,
+      ease: "power3.out"
     });
+
+    // animate number using a proxy object (no NaN ever)
+    const counter = { value: 0 };
+    gsap.to(counter, {
+      value: percent,
+      duration: 1.6,
+      ease: "power3.out",
+      onUpdate: () => {
+        textElement.textContent = `${Math.round(counter.value)}%`;
+      }
+    });
+    gsap.to(card, {
+    scale: 1.05,
+    duration: 0.35,
+    ease: "back.out(2)",
+    delay: 1.6
+    });
+
+    gsap.to(card, {
+    scale: 1,
+    duration: 0.35,
+    ease: "power2.out",
+    delay: 2.0
+    })
+  }
+
+  ScrollTrigger.create({
+    trigger: card,
+    start: "top 75%",
+    onEnter: runSkillAnim,
+    onEnterBack: runSkillAnim
+  });
 });
 
-// Hover effects for skill cards
 skillCards.forEach(card => {
-    const circle = card.querySelector('.circle-progress');
-    
-    card.addEventListener('mouseenter', () => {
-        gsap.to(card, {
-            scale: 1.05,
-            duration: 0.4,
-            ease: 'back.out(2)'
-        });
+  const circle = card.querySelector('.circle-progress');
 
-        gsap.to(circle, {
-            strokeWidth: 10,
-            duration: 0.3,
-            ease: 'power2.out'
-        });
+  card.addEventListener('mouseenter', () => {
+    gsap.to(circle, {
+      strokeWidth: 10,
+      duration: 0.3,
+      ease: 'power2.out'
     });
+  });
 
-    card.addEventListener('mouseleave', () => {
-        gsap.to(card, {
-            scale: 1,
-            duration: 0.4,
-            ease: 'power2.out'
-        });
-
-        gsap.to(circle, {
-            strokeWidth: 8,
-            duration: 0.3,
-            ease: 'power2.out'
-        });
+  card.addEventListener('mouseleave', () => {
+    gsap.to(circle, {
+      strokeWidth: 8,
+      duration: 0.3,
+      ease: 'power2.out'
     });
+  });
 });
 
 // Background Elements Floating Animation
